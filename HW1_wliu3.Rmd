@@ -17,50 +17,53 @@ Finished in the RStudio Cloud
 ### Part A
 My 3 desired learning objectives are as follows:
 
-1. have a better understanding of tools that data scientists work with
-2. be able to use these tools to explore the process of data analysis
-3. be able to communicate with my collaborators efficiently using these tools
+\begin{enumerate}
+ \item have a better understanding of tools that data scientists work with
+ \item be able to use these tools to explore the process of data analysis
+ \item be able to communicate with my collaborators efficiently using these tools
+\end{enumerate}
 
 ### Part B
 
-y1:\ uniform distribution\
-y2:\ exponential distribution\
-y3:\ pareto distribution
+$y_1$:\ uniform distribution\
+$y_2$:\ exponential distribution\
+$y_3$:\ pareto distribution
 
 \begin{eqnarray}
-y1 &=& \frac{1}{2},~~~ 2\leq x\leq 4\\
-y2 &=& \frac{1}{2}exp\left ( \frac{-x}{2} \right ),~~~ 0\leq x\leq \infty\\
-y3 &=& \frac{2}{x^{3}},~~~ 1\leq x\leq \infty
+y_1 &=& \frac{1}{2},~~~ 2\leq x\leq 4\\
+y_2 &=& \frac{1}{2}exp\left ( \frac{-x}{2} \right ),~~~ 0\leq x\leq \infty\\
+y_3 &=& \frac{2}{x^{3}},~~~ 1\leq x\leq \infty
 \end{eqnarray}
 
 # Problem 3
 
 Summary of the steps in performing Reproducible Research
 
-1. For Every Result, Keep Track of How It Was Produced\newline
+\begin{enumerate}
+ \item For Every Result, Keep Track of How It Was Produced
 Comment: It's a good way to comment the meaning or purpose of important code to make it clear and understandable.
-2. Avoid Manual Data Manipulation Steps\newline
+ \item Avoid Manual Data Manipulation Steps
 Comment:For problem 4, there is no such problem since an internal R dataset is used.
-3. Archive the Exact Versions of All External Programs Used\newline
+ \item Archive the Exact Versions of All External Programs Used
 Comment: Good suggestion since there might be different functions in different version.
-4. Version Control All Custom Scripts\newline
+ \item Version Control All Custom Scripts
 Comment: Github is an efficient example tool to keep track all changes and scripts we made, so we can check back anytime and anywhere.
-5. Record All Intermediate Results, When Possible in Standardized Formats\newline
+ \item Record All Intermediate Results, When Possible in Standardized Formats
 Comment: Intermediate results are important because they might provide insights for our final results and they allow parts of process to run firstly!
-6. For Analyses That Include Randomness, Note Underlying Random Seeds\newline
+ \item For Analyses That Include Randomness, Note Underlying Random Seeds
 Comment: Nice point! Record the seed number to make sure get reproducible results.
-7. Always Store Raw Data behind Plots\newline
+ \item Always Store Raw Data behind Plots
 Comment: Good habit to store raw data behind plots in case further investigation.
-8. Generate Hierarchical Analysis Output, Allowing Layers of Increasing Detail to Be Inspected\newline
+ \item Generate Hierarchical Analysis Output, Allowing Layers of Increasing Detail to Be Inspected
 Comment: Put as much details since all of them maybe useful in future.
-9. Connect Textual Statements to Underlying Results\newline
+ \item Connect Textual Statements to Underlying Results
 Comment: Textual statements is a good way to communicate with others.
-10. Provide Public Access to Scripts, Runs, and Results\newline
+ \item Provide Public Access to Scripts, Runs, and Results
 Comment: Set the access as public such as in Github to make the resources accessible to readers.
-
+\end{enumerate}
 
 # Problem 4
-
+**Scatter plot**
 ```{r, fig.cap='A simple scatter plot.', tidy=FALSE}
 data(mtcars) 
 plot(mtcars$wt, mtcars$mpg,
@@ -70,7 +73,7 @@ plot(mtcars$wt, mtcars$mpg,
      ylab = "MPG") 
 ```
 
-\newpage
+**Histogram**
 ```{r, fig.cap='A simple histogram.'}
 hist(mtcars$hp, 
      main = "HP of cars",
@@ -79,7 +82,7 @@ hist(mtcars$hp,
 ```
 
 
-
+\newpage
 # Appendix 1: R code
 ### Problem 4
 RStudio version: R 4.0.2
