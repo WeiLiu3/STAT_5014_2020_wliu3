@@ -1,0 +1,181 @@
+---
+title: "HW3_wliu3"
+author: "Wei Liu"
+date: "9/29/2020"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, include=TRUE, eval=TRUE)
+library(tidyverse)
+library(formatR)
+library(knitr)
+library(reshape2)
+library(microbenchmark)
+```
+
+
+# Problem 1
+Finished in the RStudio Cloud
+
+# Problem 2
+Finished in the RStudio Cloud
+
+# Problem 3
+The R style guide is very helpful for me. It gives some excellent examples to show how could we make the R code easier to read and share. This is also one part of the reproducible research. For my code works in future, I will pay attention to the naming conventions to make them easy to understand.
+
+# Problem 4
+
+
+# Problem 5
+
+## a. Summarize the dataset
+
+```{r function_summary_data}
+#import the dataset
+dat_import <- readRDS("HW3_data.rds")
+
+# the function including summary statistics
+summary_stat_caculator <- function(x=dat_import){
+  group_by(x, Observer) %>% 
+  summarize("mean_dev1" = mean(dev1),
+            "mean_dev2" = mean(dev2),
+            "std_dev1" = sd(dev1),
+            "std_dev2" = sd(dev2),
+            "correlation_dev1_dev2"=cor(dev1,dev2))}
+
+kable(summary_stat_caculator(dat_import),caption="Summary statistics from 13 Observers")
+```
+## b. A boxplot of dev, by Observer
+```{r boxplot_dev, echo=FALSE}
+dat_import1<-melt(dat_import,id.vars = "Observer",measure.vars = c("dev1","dev2"))
+
+boxplot1=ggplot(dat_import1, aes(x=as.factor(Observer), y=value)) + geom_boxplot() + facet_grid(~variable)
+print(boxplot1 + ggtitle("A boxplot from two devevices, by Observer")+labs(x = "observer"))
+```
+From the boxplots above, we found that the variations and means from device 1 and 2 are different. The mean of device 1 is higher than device 2. The variation of device 2 is higher than device 1. Both of them corresponds to the summary statistics from part#a.
+
+## c. A volin of dev, by Observer
+```{r volin_dev, echo=FALSE}
+violinplot1=ggplot(dat_import1, aes(x=as.factor(Observer), y=value)) + geom_violin() + facet_grid(~variable)
+print(violinplot1 + ggtitle("A volin plot from two devevices, by Observer")+labs(x = "observer"))
+```
+The violin plots above are similar to boxplots, but the violin plots show the kernel probability density of data based on different observations and device numbers. This gives us some insights about the distribution of data in each group. Such as for observation 12 of dev1, there are more data at the sides; however for observation 10 of dev1, there are more data at the center.
+
+## d. A scatter plot of the data
+```{r scatter_plot_dev, echo=FALSE}
+scatterplot=ggplot(dat_import1, aes(x=as.factor(Observer), y=value)) + geom_point() + facet_grid(~variable)
+print(scatterplot + ggtitle("A scatterplot from two devevices, by Observer")+labs(x = "observer"))
+```
+From the scatterplots above, they are consistent with summary statistics. However, there are more information displayed here than summary statistics. For example, for observation 5, 11, 12. The distributions of data are very different with other groups that we cannot find from the summary statistics. Therefore, when we analyze data, we should consider all aspects of data and shouldn't only depend on one or two plots. 
+
+# Problem 6
+```{r reimann sums}
+# analytical solution obtained from the internet
+analytical_sol<- 0.8556243918921488
+
+# the function in problem 6
+given_function<-function(x){
+return(exp(-0.5*x^2))
+}
+
+# the integral using reimann sums
+integral_function<-function(n){
+i=1
+n=i
+# create x sequence
+x=seq(0,1,1/n)
+round(x, digits=9)
+# midpoint obtained from 1/2(up point+ low point)
+mid_point=0.5*(x[-1]+x[-length(x)])
+# integral=summation of the length and width of each slice
+integral=sum(1/n*given_function(mid_point))
+y=integral
+# the integral value should within 1e-6 of the analytical solution
+while(abs(y-analytical_sol)>1e-6){
+i=i+1
+n=i
+x=seq(0,1,1/n)
+round(x, digits=9)
+mid_point=0.5*(x[-1]+x[-length(x)])
+integral=sum(1/n*given_function(mid_point))
+y=integral
+}
+return(data.frame("neccessary_slice_width"=1/i,integral))
+}
+knitr::kable(integral_function(1))
+```
+
+# Problem 7
+```{r newton_method}
+# set function as seen in problem7
+f_p7<-function(x){
+  return (3^x - sin(x) + cos(5*x))
+}
+
+# set differentiated function as seen in problem7
+df_p7 <- function(x){
+  return (3^x*log(3)- cos(x) -5*sin(5*x) )
+}
+
+# get the points path based on newton's method 
+newton_m_p7<-function(x_0,tolerance=1e-9){
+# x0 is starting x point, y1 is starting y point
+y1<- f_p7(x_0)
+y_result <- f_p7(x_0)
+x1<- x_0
+i<-1
+# set tolerance for y_result
+while(abs(y_result)>tolerance){
+# loop i using newton's method 
+x_begin <- x1[i]
+x_next <- x_begin - f_p7(x_begin)/df_p7(x_begin)
+i <- i+1
+x1[i]<- x_next
+y1[i] <- f_p7(x_next)
+y_result <- y1[i]
+}
+# return data frame of x and y value
+return(data.frame(x1,y1))
+}
+
+# assign the x_value and y_value
+x_value<-newton_m_p7(10)[,1]
+y_value<-newton_m_p7(10)[,2]
+
+# draw the points path
+plot(x_value,y_value,main = "The path to the solution")
+```
+
+# Problem 8
+```{r loop_method}
+# originial data
+X <- cbind(rep(1,100),rep.int(1:10,time=10))
+beta <- c(4,5)
+y <- X%*%beta + rnorm(100)
+
+# get mean of y 
+y_m<-mean(y)
+sst_y<-rep(0,100)
+
+# accumulating values in a for loop 
+loop_sst=function(x){
+for (i in 1:100){
+sst_y[i]<-(y[i]-y_m)^2
+}
+return(sum(sst_y))
+}
+
+```
+
+
+```{r matrix_method}
+matrix_sst<-t(y-y_m) %*% (y-y_m)
+```
+
+Therefore, the results from the loop method is `r loop_sst(y)`, and the matrix method is `r matrix_sst`.The timing of the methods are shown as follows:
+
+```{r microbenchmark, echo=FALSE}
+microbenchmark(result1<-loop_sst(y),result2<-t(y-y_m) %*% (y-y_m),times=100,unit="ms")
+```
