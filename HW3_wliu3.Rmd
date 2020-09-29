@@ -55,7 +55,7 @@ From table 1, it can be found that the means and standard deviations of each dev
 dat_import1<-melt(dat_import,id.vars = "Observer",measure.vars = c("dev1","dev2"))
 
 boxplot1=ggplot(dat_import1, aes(x=as.factor(Observer), y=value)) + geom_boxplot() + facet_grid(~variable)
-print(boxplot1 + ggtitle("A boxplot from two devevices, by Observer")+labs(x = "observer"))
+print(boxplot1 + ggtitle("A boxplot from two devices, by Observer")+labs(x = "observer"))
 ```
 From the boxplots above, we found that the variations and means from device 1 and 2 are different. The mean of device 1 is higher than device 2. The variation of device 2 is higher than device 1. Both of them corresponds to the summary statistics from part a.
 
