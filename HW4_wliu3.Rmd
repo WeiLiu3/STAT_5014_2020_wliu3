@@ -1,0 +1,478 @@
+---
+title: "HW4"
+author: "Wei Liu"
+date: "10/14/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, include=TRUE, eval=TRUE)
+library(dplyr)
+library(knitr)
+library(tidyverse)
+library(parallel)
+library(Matrix)
+library(devtools)
+```
+
+# Problem 1: Using the dual nature to our advantage
+
+```{r p1}
+# ste theta, X, and h values
+set.seed(1256)
+theta <- as.matrix(c(1,2),nrow=2)
+X <- cbind(1,rep(1:10,10))
+h <- X%*%theta+rnorm(100,0,0.2)
+
+#set a and tolerance
+a=0.005
+m=nrow(X)
+tolerance<-1e-7
+
+# get theta new data from the previous data
+theta_start <- as.matrix(c(0,1),nrow=2)
+h0 <- X%*% theta_start
+theta_next<-as.matrix(c(3,3),nrow=2)
+theta_next[1,1] <- theta_start[1,1] - (a/m) * sum (h0-h)
+theta_next[2,1] <- theta_start[2,1] - (a/m) * sum (t(X[,2])%*%(h0-h))
+
+# create loop
+while(abs(theta_start[1,1]-theta_next[1,1])>tolerance & abs(theta_start[2,1]-theta_next[2,1])>tolerance) {
+  theta_start<-theta_next
+  h0 <- X%*%theta_start
+  theta_next[1,1] <- theta_start[1,1] - (a/m) * sum (h0-h)
+  theta_next[2,1] <- theta_start[2,1] - (a/m) * sum (t(X[,2])%*%(h0-h))
+}
+
+theta_start<-data.frame(theta_start)
+colnames(theta_start)<-"cal_beta"
+knitr::kable(theta_start, caption="The results from algorithm")
+
+# compare the result with lm() function
+fit_lm<-lm(h~0+X)
+names(fit_lm$coefficients)<-c("theta0","theta1")
+knitr::kable(fit_lm$coefficients,caption="The results from lm() function")
+```
+For my calculation, the tolerance is 1e-7, and the step size is a=0.005. In addition, the results from my calculation nearly eqauls to the the results from lm() function. 
+
+# Problem 2 Gradient Descent with mutiple set values
+
+### Part a
+
+```{r p2}
+#set a and tolerance
+a=1e-7
+m=nrow(X)
+tolerance<-1e-9
+
+#create theta dataset
+theta_set<-matrix(1:10000,nrow=2)
+
+# create function for theta
+theta_next<-as.matrix(c(3,3),nrow=2)
+theta_function<-function(theta_start){
+h0 <- X%*% theta_start
+theta_next[1,1] <- theta_start[1,1] - (a/m) * sum (h0-h)
+theta_next[2,1] <- theta_start[2,1] - (a/m) * sum (t(X[,2])%*%(h0-h))
+
+while(abs(theta_start[1,1]-theta_next[1,1])>tolerance & abs(theta_start[2,1]-theta_next[2,1])>tolerance) {
+  theta_start<-theta_next
+  h0 <- X%*%theta_start
+  theta_next[1,1] <- theta_start[1,1] - (a/m) * sum (h0-h)
+  theta_next[2,1] <- theta_start[2,1] - (a/m) * sum (t(X[,2])%*%(h0-h))
+}
+return(theta_start)
+}
+
+cores <- max(1, detectCores() - 1)
+cl <- makeCluster(cores)
+# system_time_p2<-system.time(parApply(cl, theta_set, 2, function(x) theta_next(as.matrix(c(x[1],x[2]),nrow=2))))
+
+stopCluster(cl)
+```
+I tried using the above code to get the system time, but it keeps showing that the "could not find function "theta_next. Still working on this problem.
+
+
+### Part b
+
+This is not a good way to run this algorithm, becuase the true value might not be or close the estimate values. 
+
+### Part c
+
+My thoughts about this algorithm is that different setting values such as start value, step size and tolerance will effect the final estimate results. Therefore, when we perform the caculations using this algorithm, we should make sure that a lot of different setting values have been calculated to get the better results. 
+
+
+# Problem 3: Inverting matrices
+
+We can use the solve function of solve(t(X)%*%X, t(X)%*%y) to obtain the beta values instead of getting the inverse function of $(X'X)^{-1}$ fisrtly, because the previous method is faster and more efficiently. 
+
+# Problem 4: Need for speed challenge
+
+```{r p4}
+set.seed(12456)
+G <- matrix(sample(c(0,0.5,1),size=16000,replace=T),ncol=10)
+R <- cor(G) # R: 10 * 10 correlation matrix of G
+C <- kronecker(R, diag(1600)) # C is a 16000 * 16000 block diagonal matrix
+id <- sample(1:16000,size=932,replace=F)
+q <- sample(c(0,0.5,1),size=15068,replace=T) # vector of length 15068
+A <- C[id, -id] # matrix of dimension 932 * 15068
+B <- C[-id, -id] # matrix of dimension 15068 * 15068
+p <- runif(932,0,1)
+r <- runif(15068,0,1)
+C<-NULL #save some memory space
+```
+
+### Part a
+
+```{r p4 parta}
+# size of A and B
+format(object.size(A),units="auto")
+format(object.size(B),units="auto")
+```
+When I tried to use this code "system.time(y<-p+A%*%solve(B)%*%(q-r))" to obtain the time for calculating y, my computer just experienced system crashed and unable get the result.
+
+### Part b
+
+The matrix A and B are sparse matrix which contains a lot of 0 elements, so we can use specific package to make them stored in compressed formats and faster the matrix caculations.
+
+### Part c
+```{r p4 partc}
+A1<-as(A, "sparseMatrix")
+B1<-as(B, "sparseMatrix")
+system.time(y<-p+A1%*%solve(B1)%*%(q-r))
+```
+By using this "sparseMatrix" function, the system gets the results very fast.
+
+# Problem 5: Function for the proportion of success
+
+### Part a
+
+```{r p5 parta}
+# function that computes the proportion of successes
+proportion_suc <- function (x) {
+  proportion_s<-sum(x)/length(x)
+  return(proportion_s)
+}
+# Success is 1, Fail is 0
+```
+
+### Part b
+
+```{r p5 partb}
+#simulate 10 flips of a coin
+set.seed(12345)
+P4b_data <- matrix(rbinom(10, 1, prob = (31:40)/100), nrow = 10, ncol = 10, byrow = FALSE)
+```
+
+### Part c
+
+```{r p5 partc}
+#compute the proportion of success in data
+prop_suc_bycolumn<-apply(P4b_data, 2, proportion_suc)
+prop_suc_bycolumn
+prop_suc_byrow<-apply(P4b_data, 1, proportion_suc)
+prop_suc_byrow
+```
+It shows that all the columns have the same proportion of success with 0.6. The rows have 0 or 1 proportion of success.
+
+### Part d
+
+```{r p5 partd}
+#fixed matrix function
+pro_suc<-function(p){
+  outcome1<-rbinom(10,1,p)
+  return(outcome1)
+}
+
+fix_matrix<-sapply(prob<-(31:40)/100,pro_suc)
+colnames(fix_matrix)<-c(1:10)
+knitr::kable(fix_matrix, caption = "Fixed matrix")
+
+marg_suc<-apply(fix_matrix,2,proportion_suc)
+knitr::kable(marg_suc, caption = "The marginal successes")
+
+```
+
+# Problem 6: Scatter Plot from two devices data
+
+```{r p6}
+#import data
+dat_import<-readRDS("C:/Users/Wei Liu/Documents/HW3_data.rds")
+colnames(dat_import)<-c("Observer","x","y")
+
+
+par(mfrow=c(2,4))
+#part 1 create function
+scatter_plot<-function(dataset){
+  plot2<-plot(dataset$x,dataset$y,xlab="x",ylab="y",main="a single scatter plot") 
+  return(plot2)
+}
+# single scatter plot of the entire dataset
+scatter_plot(dat_import)
+
+
+#part 2
+# seperate scatter plot for each observer
+scatter_plot1<-function(obs){
+  dat1<-dat_import[dat_import$Observer==obs,]
+  plot1<-plot(dat1[,2],dat1[,3],xlab="x",ylab="y",main="each observer")
+  return(plot1)
+}
+
+sapply(c(1:13), scatter_plot1)
+```
+
+# Problem 7: Annotated map of US
+
+### Part a
+
+```{r p7read_data}
+#download the files, looks like it is a .zip
+library(downloader)
+download("http://www.farinspace.com/wp-content/uploads/us_cities_and_states.zip",dest="us_cities_states.zip")
+unzip("us_cities_states.zip", exdir=".")
+#read in data, looks like sql dump, blah
+library(data.table)
+states <- fread(input = "./us_cities_and_states/states.sql",skip = 23,sep = "'", sep2 = ",", header = F, select = c(2,4))
+
+```
+
+```{r p7parta}
+#for cities
+cities <- fread(input = "./us_cities_and_states/cities_extended.sql",skip = 23, sep = "'", sep2 = ",", header = F, select = c(2,4,6,8,10,12))
+colnames(cities)<-c("city","state","zip","Variable1","Variable2","county")
+kable(head(cities), caption = "Head of Cities dataset of US")
+```
+
+### Part b
+
+```{r p7partb}
+sum_table<-tapply(cities$city, cities$state,length)
+#summary table of the number of cities
+sum_table
+```
+
+### Part c
+
+```{r p7partc}
+# create function for counting letters
+letter_count <- data.frame(matrix(NA,nrow=51, ncol=26))
+colnames(letter_count)<-letters
+rownames(letter_count)<-states$V2
+
+getCount <- function(letter, state_name){
+  state_name1<-tolower(state_name)
+  temp <- strsplit(state_name1, split ="")
+  count<- length(which(temp[[1]] == letter))
+return(count)
+}
+
+for(i in 1:51){
+letter_count[i,] <- sapply(letters, function(x) getCount(x, states$V2[i]))
+}
+
+kable(head(letter_count),caption = "Counting the numbers of occurances of a letter")
+```
+### Part d
+```{r p7 partd, echo=F, include=F}
+# first map
+library(devtools)
+devtools::install_github("wmurphyrd/fiftystater")
+library(fiftystater)
+library(mapproj)
+```
+
+
+```{r p7 partd1}
+# first map
+#remove the none state element
+sum_table<-sum_table[sum_table != 176]
+state<-tolower(states$V2)
+
+#create data.frame for map
+state_map<-data.frame(tolower(states$V2),sum_table)
+
+p <- ggplot(state_map, aes(map_id = state)) +
+# map points to the fifty_states shape data
+geom_map(aes(fill = sum_table), map = fifty_states) +
+expand_limits(x = fifty_states$long, y = fifty_states$lat) +
+coord_map() +
+scale_x_continuous(breaks = NULL) +
+scale_y_continuous(breaks = NULL) +
+labs(x = "", y = "") +
+theme(legend.position = "bottom",
+panel.background = element_blank())
+
+p
+
+# second map
+letter_count_m<-apply(letter_count,1,max)
+state_highl<-(letter_count_m>=3)
+
+state_highl_map<-data.frame(tolower(states$V2),state_highl)
+p1 <- ggplot(state_highl_map, aes(map_id = state)) +
+# map points to the fifty_states shape data
+geom_map(aes(fill = state_highl), map = fifty_states) +
+expand_limits(x = fifty_states$long, y = fifty_states$lat) +
+coord_map() +
+scale_x_continuous(breaks = NULL) +
+scale_y_continuous(breaks = NULL) +
+labs(x = "", y = "") +
+theme(legend.position = "bottom",
+panel.background = element_blank())
+
+p1
+```
+
+
+# Problem 8: Bootstrapping
+
+### Part a
+
+The author didn't create the new variable for "Boot". The loop "for (i in 1:Boot)" should be "for (i in 1: Boot_times)".
+
+### Part b
+
+```{r p8 sensory_import, cache=FALSE, echo=T}
+## getting "http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat"
+url <- "http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat"
+sensory_data_raw<-as.data.frame(fread(url, header=F, fill=T,stringsAsFactors = F, skip=2))
+saveRDS(sensory_data_raw,"sensory_data_raw")
+sensory_data_raw<-readRDS("sensory_data_raw")
+```
+
+```{r sensory_tidy_baseR, echo=T, cache=FALSE, include=T}
+# check the column and row numbers of sensory_data_raw
+dim(sensory_data_raw)
+# dim=(30,6)
+
+# Use loop to move the NA in the column V6 to the first column V1
+for (i in 1:30) {
+  if(is.na(sensory_data_raw$V6[i])) {
+  sensory_data_raw[i,-1] <- sensory_data_raw[i,1:5]
+  sensory_data_raw[i,1] <- NA
+  }
+}
+
+# There are 10 items in total, so need fix the items numbers in the first column.
+sensory_data_raw$V1 <- rep(1:10, each = 3)
+
+# create a new column V7 for observation numbers.
+sensory_data_raw$V7 <- rep(c("ob.1","ob.2","ob.3"),10)
+sensory_data_raw1<-sensory_data_raw
+
+# set the column names
+colnames(sensory_data_raw1)<-
+  c("items", "operator1", "operator2", "operator3", "operator4", "operator5","observations")
+```
+
+```{r sensory_tidy_tidyverse, echo=T, include=T, cache=FALSE}
+#stack column using tidyverse
+sensory_data_tidy_tv <- sensory_data_raw1 %>% 
+  gather(key="operator", value="data", operator1:operator5)
+```
+
+```{r p8partb}
+sensory_data_tidy_tv[,5]<-rep(1:5, each = 30)
+colnames(sensory_data_tidy_tv)[5]<-"operator_num"
+
+
+bootstrap<-function(boot_times){
+  boot_resl<-data.frame(matrix(NA,nrow=boot_times, ncol=2))
+  colnames(boot_resl)<-c("beta0","beta1")
+  for (i in 1:boot_times){
+    samp_oper<-c(sample(1:30,30,replace=T),
+             sample(31:60,30,replace=T),
+             sample(61:90,30,,replace=T),
+             sample(91:120,30,,replace=T),
+             sample(121:150,30,,replace=T))
+    boot_oper<-sensory_data_tidy_tv[samp_oper,]
+    boot_resl[i,1]<-coef(lm(boot_oper[,5]~boot_oper[,4]))[1]
+    boot_resl[i,2]<-coef(lm(boot_oper[,5]~boot_oper[,4]))[2]
+  }
+  return(boot_resl)
+}
+kable(head(bootstrap(100)),caption = "Head of bootstrap estimate values")
+
+sys_time_partb<-system.time(bootstrap(100))
+```
+
+### Part c
+
+```{r p8partc}
+library(parallel)
+cores <- max(1, detectCores() - 1)
+
+cl <- makeCluster(cores)
+
+sys_time_partc<-system.time(bootstrap(100))
+
+stopCluster(cl)
+
+kable(rbind(sys_time_partb, sys_time_partc))
+```
+
+The bootstraps in parallel in part c runs faster than in basic anlysis in part b. Becuase mutiple cores run parallel analysis at the same time which makes caculation faster.
+
+# Problem 9: Newton's method
+
+### Part a
+
+```{r p9parta}
+# set function as seen in the method
+f_p7<-function(x){
+  return (3^x - sin(x) + cos(5*x))
+}
+
+# set differentiated function as seen in the method
+df_p7 <- function(x){
+  return (3^x*log(3)- cos(x) -5*sin(5*x) )
+}
+
+# get the points path based on newton's method 
+newton_m_p7<-function(x_0,tolerance=1e-9){
+# x0 is starting x point, y1 is starting y point
+y1<- f_p7(x_0)
+y_result <- f_p7(x_0)
+x1<- x_0
+i<-1
+# set tolerance for y_result
+while(abs(y_result)>tolerance){
+# loop i using newton's method 
+x_begin <- x1[i]
+x_next <- x_begin - f_p7(x_begin)/df_p7(x_begin)
+i <- i+1
+x1[i]<- x_next
+y1[i] <- f_p7(x_next)
+y_result <- y1[i]
+}
+# return data frame of x and y value
+return(x1[i-1])
+}
+
+#e.g. an example to show function works
+newton_m_p7(10)
+
+grid <- seq(-3,3,length.out = 1000)
+# root_parta<-sapply(grid, function(x) newton_m_p7(x)
+# root_time_parta<-system.time(sapply(grid, function(x) newton_m_p7(x)))
+# root_time_parta
+```
+
+From the example above, it shows that my function works good. However, when I tried to get the system time with big data (1000), it took so long time and my computer cannot stop. So I just put the code there rather than running it. Still working on this problem
+
+### Part b
+
+```{r p9partb}
+
+cl <- makeCluster(3)
+
+# sys_time_b<-system.time(parSapply(cl, grid, function(x) newton_m_p7(x)))
+# sys_time_b
+
+stopCluster(cl)
+
+```
+Same here. Cannot get the results here and I just put my code there rather than running it. Still working on this problem.
+
+
