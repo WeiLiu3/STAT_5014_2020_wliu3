@@ -60,18 +60,22 @@ For my calculation, the tolerance is 1e-7, and the step size is a=0.005. In addi
 ### Part a
 
 ```{r p2}
-#set a and tolerance
-a=1e-7
-m=nrow(X)
-tolerance<-1e-9
 
 #create theta dataset
-theta_set<-matrix(1:10000,nrow=2)
+theta_set<-matrix(1:1000,nrow=2)
 
 # create function for theta
-theta_next<-as.matrix(c(3,3),nrow=2)
+
 theta_function<-function(theta_start){
+theta_next<-as.matrix(c(3,3),nrow=2)
+a=1e-7
+tolerance<-1e-9
+set.seed(1256)
+theta <- as.matrix(c(1,2),nrow=2)
+X <- cbind(1,rep(1:10,10))
+m=nrow(X)
 h0 <- X%*% theta_start
+h <- X%*%theta+rnorm(100,0,0.2)
 theta_next[1,1] <- theta_start[1,1] - (a/m) * sum (h0-h)
 theta_next[2,1] <- theta_start[2,1] - (a/m) * sum (t(X[,2])%*%(h0-h))
 
@@ -84,13 +88,15 @@ while(abs(theta_start[1,1]-theta_next[1,1])>tolerance & abs(theta_start[2,1]-the
 return(theta_start)
 }
 
-cores <- max(1, detectCores() - 1)
-cl <- makeCluster(cores)
-# system_time_p2<-system.time(parApply(cl, theta_set, 2, function(x) theta_next(as.matrix(c(x[1],x[2]),nrow=2))))
+#cores <- max(1, detectCores() - 1)
+#cl <- makeCluster(cores)
+#clusterExport(cl,"theta_function")
+#system_time_p2<-system.time(parApply(cl, theta_set, 2, function(x) #theta_function(as.matrix(c(x[1],x[2]),nrow=2))))
 
-stopCluster(cl)
+#system_time_p2
+#stopCluster(cl)
 ```
-I tried using the above code to get the system time, but it keeps showing that the "could not find function "theta_next. Still working on this problem.
+I tried using the above code to get the system time, but it kept running and didn't stop, so I attached the code here instead of running it. Still working on this problem.
 
 
 ### Part b
@@ -465,14 +471,14 @@ From the example above, it shows that my function works good. However, when I tr
 
 ```{r p9partb}
 
-cl <- makeCluster(3)
+#cl <- makeCluster(3)
+#clusterExport(cl, c("f_p7", "df_p7", "newton_m_p7"))
+#sys_time_b<-system.time(parSapply(cl, grid, function(x) newton_m_p7(x)))
+#sys_time_b
 
-# sys_time_b<-system.time(parSapply(cl, grid, function(x) newton_m_p7(x)))
-# sys_time_b
-
-stopCluster(cl)
+#stopCluster(cl)
 
 ```
-Same here. Cannot get the results here and I just put my code there rather than running it. Still working on this problem.
+Same here. My computer went system crashed, so I just attach my code there rather than running it. Still working on this problem. I think the parallel compute in part b will be faster than basic caculation in part a, because mutiple cores analyse the data at same time which is more efficient. 
 
 
