@@ -1,0 +1,167 @@
+---
+title: "HW2_wliu3"
+author: "Wei Liu"
+date: "9/9/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, include=FALSE, eval=TRUE, cache=TRUE)
+
+library(data.table)
+```
+
+# Problem 4
+
+## a. Sensory data from five operators
+
+```{r sensory_import, cache=FALSE}
+url <- "http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat"
+sensory_import<-fread(url, header=F, fill=T,stringsAsFactors = F, skip=2)
+sensory_import
+```
+```{r sensory_import1, cache=FALSE}
+sensory1<- sensory_import %>% pivot_longer(V1:V6)
+sensory1
+```
+```{r sensory_import2, cache=FALSE}
+sensory1$name<-rep(1:10,each=18)
+sensory1
+spread(sensory1,key=name,value = value)
+```
+
+## b. performance data from five operators
+```{r performance_import, cache=FALSE}
+url2<-"http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/LongJumpData.dat"
+performance_import<-fread(url2, header=F, fill=T,stringsAsFactors = F, skip=1, data.table = F)
+
+```
+```{r performance_output1, cache=FALSE}
+# base R functions
+year<-c(performance_import[,1],performance_import[,3],performance_import[,5],performance_import[,7])
+year
+
+longjump<--c(performance_import[,2],performance_import[,4],performance_import[,6],performance_import[,8])
+longjump
+
+performance_output<-cbind(year,longjump)
+performance_output
+
+year1<-performance_output[,1]+1900
+performance_output1<-cbind(year1,performance_output)
+performance_output2<-performance_output1[,-2];performance_output2
+
+performance_output3<-na.omit(performance_output2)
+
+plot(year1,longjump)
+
+year<-c(performance_import_raw[,1], performance_import_raw[,3], performance_import_raw[,5], performance_import_raw[,7])
+```
+```{r performance_output2, cache=FALSE}
+# using tidyverse function
+performance_import11<-performance_import %>% 
+                    select(c(V1,V3,V5,V7))
+performance_import11
+
+year12<-stack(performance_import11) %>% select(values) %>% 
+                    `colnames<-`("year")
+year12
+
+
+performance_import12<-performance_import %>% 
+                    select(c(V2,V4,V6,V8)) 
+                    
+performance_import12
+
+longjump12<-stack(performance_import12) %>% 
+            select(values) %>% 
+            `colnames<-`("longjump") 
+longjump12
+
+performance_output11<-cbind(year12,longjump12)%>% 
+                            mutate(year22=year+1900)%>%
+                            select(year22,longjump)%>%
+                            na.omit()
+
+summary(performance_output11)
+```
+
+
+##c 
+```{r weight_import, cache=FALSE}
+url3<-"http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/BrainandBodyWeight.dat"
+weight_import<-fread(url3, header=F, stringsAsFactors = F, fill=T, skip=1, data.table = F)
+```
+```{r wight_output, cache=FALSE}
+# base R functions
+body_wt<-c(weight_import[,1],weight_import[,3],weight_import[,5])
+body_wt
+
+brain_wt<-c(weight_import[,2],weight_import[,4],weight_import[,6])
+brain_wt
+
+weight_output<-cbind(body_wt,brain_wt)
+weight_output
+
+weight_output1<-na.omit(weight_output)
+weight_output1
+
+plot(brain_wt, brain_wt)
+```
+```{r weight_output2, cache=FALSE}
+# using tidyverse function
+body_wt1<- weight_import %>% 
+                    select(c(V1,V3,V5))
+body_wt1
+
+body_wt2<-stack(body_wt1) %>% select(values) %>% 
+                    `colnames<-`("body_wt")
+body_wt2
+
+
+brain_wt1<-weight_import %>% 
+                    select(c(V2,V4,V6)) 
+brain_wt1
+
+brain_wt2<-stack(weight_import) %>% 
+            select(values) %>% 
+            `colnames<-`("brain_wt") 
+brain_wt2
+
+weight_output11<-cbind(body_wt2,brain_wt2) %>% na.omit()
+
+summary(weight_output11)
+```
+
+
+
+##d 
+```{r tomatoes_import, cache=FALSE}
+url4<-"https://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/tomato.dat"
+tomatoes_import<-fread(url4);tomatoes_import
+
+```
+
+```{r tomatoes_output, cache=FALSE}
+tomatoes_import1<-tomatoes_import %>% 
+    select("10000","20000","30000") %>%
+    separate("10000", into = c("10000m1", "10000m2","10000m3"),sep=",")%>%
+    separate("20000", into = c("20000m1", "20000m2","20000m3"),sep=",")%>%
+    separate("30000", into = c("30000m1", "30000m2","30000m3"),sep=",")
+
+t1<-t(tomatoes_import1)
+t5<-c(t1[,1],t1[,2])
+as.numeric(t5)
+tamato_type<-rep(c("tomato1","tamato2"),9)
+density<-rep(rep(c(10000,20000,30000),each=3),2)
+observations<-rep(rep(c("ob.1","ob.2","ob.3"),3),2)
+
+
+t2<-data.table(t1[1:3,1],t1[4:6,1],t1[7:9,1])
+t3<-data.table(t1[1:3,2],t1[4:6,2],t1[7:9,2])
+t4<-cbind(t2,t3)
+
+colnames(t4)<-c("Tomato1_10000","Tomato1_20000","Tomato1_30000","Tomato2_10000","Tomato2_20000","Tomato2_30000")
+
+rownames(t4)<-c("Measurement1","Measurement2","Measurement3")
+```
